@@ -128,7 +128,13 @@
     <ClCompile Include="SwaggTransformer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="embedding.h" />
     <ClInclude Include="tokenizer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="corpus.txt" />
+    <Text Include="tasks.txt" />
+    <Text Include="vocabulary.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
