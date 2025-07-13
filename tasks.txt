@@ -1,1 +1,14 @@
-- optimize delimiters checking 
+- optimize delimiters checking
+
+
+
+Loop over words
+Node = root
+Avancer dans le trie jusqu'à une leaf
+Ajouter l'index à tokenizedWords
+Node = root
+Commencer à partir du 1er charactère non matché
+Avancer dans le trie jusqu'à une leaf
+Ajouter l'index à tokenizedWords
+
+Si 
