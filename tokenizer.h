@@ -3,8 +3,9 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <map>
 #include <chrono>
+#include <unordered_map>
+#include <map>
 
 
 
@@ -27,6 +28,12 @@ public:
 	}
 };
 
+
+struct pair_hash {
+	std::size_t operator()(const std::pair<int, int>& p) const {
+		return std::hash<int>{}(p.first) ^ (std::hash<int>{}(p.second) << 1);
+	}
+};
 
 
 
@@ -83,11 +90,10 @@ void buildTrie(std::vector<std::string> vocabulary, trieNode* root) {
 
 
 
-std::string loadCorpus(std::ifstream& corpusStream) {
+bool loadCorpus(std::ifstream& corpusStream, std::string &corpusString) {
 
 
-	std::string corpusString;
-
+	corpusString = "";
 
 	std::string line;
 
@@ -100,7 +106,9 @@ std::string loadCorpus(std::ifstream& corpusStream) {
 	while (!match) {
 
 
-		std::getline(corpusStream, line);
+		if (!std::getline(corpusStream, line)) {
+			return false;
+		}
 
 
 		int pos = line.find("<text");
@@ -110,7 +118,9 @@ std::string loadCorpus(std::ifstream& corpusStream) {
 			while (!match) {
 
 
-				std::getline(corpusStream, line);
+				if (!std::getline(corpusStream, line)) {
+					return false;
+				}
 
 				
 				int pos = line.find("</text");
@@ -133,7 +143,7 @@ std::string loadCorpus(std::ifstream& corpusStream) {
 	}
 
 
-	return corpusString;
+	return true;
 
 }
 
@@ -313,7 +323,7 @@ std::vector<std::pair<int, int>> createPairs(std::vector<std::vector<int>> token
 
 
 
-void calculateFrequencies(std::vector<std::pair<int, int>> pairs, std::map<std::pair<int, int>, int> &frequencies) {
+void calculateFrequencies(std::vector<std::pair<int, int>> pairs, std::unordered_map<std::pair<int, int>, int, pair_hash> &frequencies) {
 
 	for (auto& i : pairs) {
 		frequencies[i]++;
@@ -327,7 +337,7 @@ void calculateFrequencies(std::vector<std::pair<int, int>> pairs, std::map<std::
 
 
 
-std::vector<std::pair<std::pair<int, int>, int>> orderFrequencies(std::map<std::pair<int, int>, int> frequencies) {
+std::vector<std::pair<std::pair<int, int>, int>> orderFrequencies(std::unordered_map<std::pair<int, int>, int, pair_hash> frequencies) {
 
 	std::vector<std::pair<std::pair<int, int>, int>> orderedFrequencies;
 
@@ -439,18 +449,18 @@ void tokenize() {
 
 
 
-	std::map<std::pair<int, int>, int> frequencies;
+	std::unordered_map<std::pair<int, int>, int, pair_hash> frequencies;
 
 
-	int iterations = 300000;
+	std::string corpusString;
+
+
+	start = std::chrono::high_resolution_clock::now();
 
 
 
-	for (int i = 0; i < iterations; i++) {
+	while (loadCorpus(corpusStream, corpusString)) {
 
-		start = std::chrono::high_resolution_clock::now();
-
-		std::string corpusString = loadCorpus(corpusStream);
 
 		loadCorpusTime += std::chrono::high_resolution_clock::now() - start;
 
@@ -505,17 +515,16 @@ void tokenize() {
 
 		start = std::chrono::high_resolution_clock::now();
 
-		corpusString.clear();
+		words.resize(0);
 
-		words.clear();
+		tokenizedWords.resize(0);
 
-		tokenizedWords.clear();
-
-		pairs.clear();
+		pairs.resize(0);
 
 		clearTime += std::chrono::high_resolution_clock::now() - start;
 
 
+		start = std::chrono::high_resolution_clock::now();
 
 	}
 
@@ -566,6 +575,6 @@ void tokenize() {
 	std::cout << "runtime : " << runtime << "\n";
 
 
-	//outputPair(vocabulary, orderedFrequencies);
+	outputPair(vocabulary, orderedFrequencies);
 
 }
