@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <chrono>
 
 
 
@@ -312,18 +313,12 @@ std::vector<std::pair<int, int>> createPairs(std::vector<std::vector<int>> token
 
 
 
-
-std::map<std::pair<int, int>, int> calculateFrequencies(std::vector<std::pair<int, int>> pairs) {
-	
-	std::map<std::pair<int, int>, int> frequencies;
-
-
+void calculateFrequencies(std::vector<std::pair<int, int>> pairs, std::map<std::pair<int, int>, int> &frequencies) {
 
 	for (auto& i : pairs) {
 		frequencies[i]++;
 	}
 
-	return frequencies;
 }
 
 
@@ -388,15 +383,50 @@ void tokenize() {
 
 
 
+	auto runStart = std::chrono::high_resolution_clock::now();
+
+
+
+
+	auto start = std::chrono::high_resolution_clock::now();
+	
+	
+
+
+
+	std::chrono::duration<double> loadVocabularyTime;
+	std::chrono::duration<double> buildTrieTime;
+	std::chrono::duration<double> loadCorpusTime;
+	std::chrono::duration<double> normalizeCorpusTime;
+	std::chrono::duration<double> tokenizeCorpusTime;
+	std::chrono::duration<double> createPairsTime;
+	std::chrono::duration<double> calculateFrequenciesTime;
+	std::chrono::duration<double> orderFrequenciesTime;
+	std::chrono::duration<double> clearTime;
+
+
+
+
+
+
+	start = std::chrono::high_resolution_clock::now();
 
 	std::vector<std::string> vocabulary = loadVocabulary();
+
+	loadVocabularyTime += std::chrono::high_resolution_clock::now() - start;
 
 
 	trieNode* root = new trieNode();
 
 
 
+
+	start = std::chrono::high_resolution_clock::now();
+
 	buildTrie(vocabulary, root);
+
+	buildTrieTime += std::chrono::high_resolution_clock::now() - start;
+
 
 
 
@@ -412,42 +442,68 @@ void tokenize() {
 	std::map<std::pair<int, int>, int> frequencies;
 
 
+	int iterations = 300000;
 
 
 
+	for (int i = 0; i < iterations; i++) {
 
-	for (int i = 0; i < 1000; i++) {
-
+		start = std::chrono::high_resolution_clock::now();
 
 		std::string corpusString = loadCorpus(corpusStream);
 
+		loadCorpusTime += std::chrono::high_resolution_clock::now() - start;
 
 
+
+
+
+		start = std::chrono::high_resolution_clock::now();
 
 		std::vector<std::string> words = normalizeCorpus(corpusString);
 
+		normalizeCorpusTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
+
+
+
+
+
+
+		start = std::chrono::high_resolution_clock::now();
 
 		std::vector<std::vector<int>> tokenizedWords = tokenizeCorpus(words, root);
 
+		tokenizeCorpusTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
+
+		start = std::chrono::high_resolution_clock::now();
 
 		std::vector<std::pair<int, int>> pairs = createPairs(tokenizedWords);
 
-
-
-
-
-		frequencies = calculateFrequencies(pairs);
+		createPairsTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
 
 
+		start = std::chrono::high_resolution_clock::now();
+
+		calculateFrequencies(pairs, frequencies);
+
+		calculateFrequenciesTime += std::chrono::high_resolution_clock::now() - start;
+
+
+
+
+
+
+
+		start = std::chrono::high_resolution_clock::now();
 
 		corpusString.clear();
 
@@ -457,15 +513,59 @@ void tokenize() {
 
 		pairs.clear();
 
+		clearTime += std::chrono::high_resolution_clock::now() - start;
+
+
+
 	}
 
 
 
+
+
+
+	start = std::chrono::high_resolution_clock::now();
+
 	std::vector<std::pair<std::pair<int, int>, int>> orderedFrequencies = orderFrequencies(frequencies);
 
+	orderFrequenciesTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
-	outputPair(vocabulary, orderedFrequencies);
+
+
+
+
+	auto runEnd = std::chrono::high_resolution_clock::now();
+
+
+	std::chrono::duration<double> runtime = runEnd - runStart;
+
+
+
+
+
+
+	std::cout << "loadVocabularyTime : " << loadVocabularyTime.count() << "\n";
+	std::cout << "buildTrieTime : " << buildTrieTime.count() << "\n";
+	std::cout << "loadCorpusTime : " << loadCorpusTime.count() << "\n";
+	std::cout << "normalizeCorpusTime : " << normalizeCorpusTime.count() << "\n";
+	std::cout << "tokenizeCorpusTime : " << tokenizeCorpusTime.count() << "\n";
+	std::cout << "createPairsTime : " << createPairsTime.count() << "\n";
+	std::cout << "calculateFrequenciesTime : " << calculateFrequenciesTime.count() << "\n";
+	std::cout << "clearTime : " << clearTime.count() << "\n";
+	std::cout << "orderFrequenciesTime : " << orderFrequenciesTime.count() << "\n";
+
+
+
+
+
+
+
+
+	std::cout << "runtime : " << runtime << "\n";
+
+
+	//outputPair(vocabulary, orderedFrequencies);
 
 }
