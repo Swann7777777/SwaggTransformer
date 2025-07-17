@@ -8,6 +8,10 @@ int main() {
 
 	tokenize();
 
+	}
+
+	}
+
 
 	return 0;
 }
