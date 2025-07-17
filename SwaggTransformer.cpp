@@ -6,9 +6,7 @@
 
 int main() {
 
-	while (true) {
-		tokenize();
-	}
+	tokenize();
 
 
 	return 0;

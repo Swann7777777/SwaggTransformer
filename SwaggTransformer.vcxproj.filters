@@ -34,6 +34,8 @@
     <Text Include="corpus.txt">
       <Filter>Resource Files</Filter>
     </Text>
-    <Text Include="tasks.txt" />
+    <Text Include="tasks.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -30,6 +30,7 @@ public:
 
 
 struct pair_hash {
+
 	std::size_t operator()(const std::pair<int, int>& p) const {
 		return std::hash<int>{}(p.first) ^ (std::hash<int>{}(p.second) << 1);
 	}
@@ -59,7 +60,7 @@ std::vector<std::string> loadVocabulary() {
 
 
 
-void buildTrie(std::vector<std::string> vocabulary, trieNode* root) {
+void buildTrie(std::vector<std::string> &vocabulary, trieNode* root) {
 
 	for (int i = 0; i < vocabulary.size(); i++) {
 
@@ -90,7 +91,7 @@ void buildTrie(std::vector<std::string> vocabulary, trieNode* root) {
 
 
 
-bool loadCorpus(std::ifstream& corpusStream, std::string &corpusString) {
+bool loadCorpus(std::ifstream &corpusStream, std::string &corpusString) {
 
 
 	corpusString = "";
@@ -130,7 +131,7 @@ bool loadCorpus(std::ifstream& corpusStream, std::string &corpusString) {
 				}
 
 				else {
-					corpusString += line;
+					corpusString += line + " ";
 				}
 
 			}
@@ -150,7 +151,7 @@ bool loadCorpus(std::ifstream& corpusStream, std::string &corpusString) {
 
 
 
-std::vector<std::string> normalizeCorpus(std::string corpusString) {
+std::vector<std::string> normalizeCorpus(std::string &corpusString) {
 
 
 	std::vector<std::string> words;
@@ -177,9 +178,6 @@ std::vector<std::string> normalizeCorpus(std::string corpusString) {
 
 
 
-
-
-
 	size_t pos = 0;
 
 
@@ -199,7 +197,7 @@ std::vector<std::string> normalizeCorpus(std::string corpusString) {
 	for (size_t i = 0; i < corpusString.size(); i++) {
 
 
-		if (corpusString[i] <= -1 || !std::isalpha(corpusString[i])) {
+		if ((corpusString[i] <= -1 || !std::isalpha(corpusString[i]))) {
 
 			words.push_back(corpusString.substr(startPos, i - startPos));
 			startPos = i + 1;
@@ -213,12 +211,12 @@ std::vector<std::string> normalizeCorpus(std::string corpusString) {
 
 
 
-	words.erase(
-		std::remove_if(words.begin(), words.end(), [](const std::string& str) {
-			return str.empty() || str.size() == 1;
-			}),
-		words.end()
-	);
+	//words.erase(
+	//	std::remove_if(words.begin(), words.end(), [](const std::string& str) {
+	//		return str.empty() || str.size() == 1;
+	//		}),
+	//	words.end()
+	//);
 
 
 
@@ -236,22 +234,7 @@ std::vector<std::string> normalizeCorpus(std::string corpusString) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-std::vector<std::vector<int>> tokenizeCorpus(std::vector<std::string> words, trieNode* root) {
+std::vector<std::vector<int>> tokenizeCorpus(const std::vector<std::string> &words, trieNode* root) {
 
 	std::vector<std::vector<int>> tokenizedWords(words.size());
 
@@ -259,41 +242,37 @@ std::vector<std::vector<int>> tokenizeCorpus(std::vector<std::string> words, tri
 
 	for (int i = 0; i < words.size(); i++) {
 
+		trieNode* node = root;
+
+		int token = -1;
+		int index = 0;
 
 		for (int j = 0; j < words[i].size();) {
 
+			if (node->children[words[i][j] - 'a'] != nullptr) {
 
-			size_t startPos = j;
+				node = node->children[words[i][j] - 'a'];
 
-			std::string subWord = words[i].substr(j, words[i].size() - j);
-
-			trieNode* node = root;
-
-
-			for (int k = 0; k <= subWord.size(); k++) {
-
-
-
-
-                if (node->children[subWord[k] - 'a'] == nullptr) {
-
-
-
-					tokenizedWords[i].push_back(node->index);
-
-
-					node = root;
+				if (node->index != -1) {
+					token = node->index;
+					index = j;
 				}
 
-
 				j++;
-
-
-				node = node->children[subWord[k] - 'a'];
-
-
 			}
+
+			else {
+				tokenizedWords[i].push_back(token);
+				j = index + 1;
+				node = root;
+			}
+
+
+
+
 		}
+
+		tokenizedWords[i].push_back(token);
 	}
 
 
@@ -304,16 +283,19 @@ std::vector<std::vector<int>> tokenizeCorpus(std::vector<std::string> words, tri
 
 
 
-std::vector<std::pair<int, int>> createPairs(std::vector<std::vector<int>> tokenizedWords) {
+std::vector<std::pair<int, int>> createPairs(const std::vector<std::vector<int>> &tokenizedWords, std::vector<std::string> &words) {
 
 	std::vector<std::pair<int, int>> pairs;
 
 
 	for (int i = 0; i < tokenizedWords.size(); i++) {
 
-		for (int j = 0; j < tokenizedWords[i].size() - 1; j++) {
+		if (tokenizedWords[i].size() > 1) {
 
-			pairs.push_back({ tokenizedWords[i][j], tokenizedWords[i][j + 1] });
+			for (int j = 0; j < tokenizedWords[i].size() - 1; j++) {
+
+				pairs.push_back({ tokenizedWords[i][j], tokenizedWords[i][j + 1] });
+			}
 		}
 	}
 
@@ -323,7 +305,7 @@ std::vector<std::pair<int, int>> createPairs(std::vector<std::vector<int>> token
 
 
 
-void calculateFrequencies(std::vector<std::pair<int, int>> pairs, std::unordered_map<std::pair<int, int>, int, pair_hash> &frequencies) {
+void calculateFrequencies(const std::vector<std::pair<int, int>> &pairs, std::unordered_map<std::pair<int, int>, int, pair_hash> &frequencies) {
 
 	for (auto& i : pairs) {
 		frequencies[i]++;
@@ -337,7 +319,7 @@ void calculateFrequencies(std::vector<std::pair<int, int>> pairs, std::unordered
 
 
 
-std::vector<std::pair<std::pair<int, int>, int>> orderFrequencies(std::unordered_map<std::pair<int, int>, int, pair_hash> frequencies) {
+std::vector<std::pair<std::pair<int, int>, int>> orderFrequencies(const std::unordered_map<std::pair<int, int>, int, pair_hash> &frequencies) {
 
 	std::vector<std::pair<std::pair<int, int>, int>> orderedFrequencies;
 
@@ -370,7 +352,7 @@ std::vector<std::pair<std::pair<int, int>, int>> orderFrequencies(std::unordered
 
 
 
-void outputPair(std::vector<std::string> vocabulary, std::vector<std::pair<std::pair<int, int>, int>> orderedFrequencies) {
+void outputPair(const std::vector<std::string> &vocabulary, const std::vector<std::pair<std::pair<int, int>, int>> &orderedFrequencies) {
 
 	std::ofstream vocabularyFileOut("vocabulary.txt", std::ios::app);
 
@@ -383,198 +365,149 @@ void outputPair(std::vector<std::string> vocabulary, std::vector<std::pair<std::
 
 
 
+void deleteTrie(trieNode* node) {
 
+	if (!node) {
+		return;
+	}
 
+	for (int i = 0; i < 26; ++i) {
+		deleteTrie(node->children[i]);
+	}
+
+	delete node;
+}
 
 
 
 
 void tokenize() {
 
+	for (int v = 0; v < 100; v++) {
 
+		auto runStart = std::chrono::high_resolution_clock::now();
 
-	auto runStart = std::chrono::high_resolution_clock::now();
 
 
 
 
-	auto start = std::chrono::high_resolution_clock::now();
-	
-	
 
 
+		std::vector<std::string> vocabulary = loadVocabulary();
 
-	std::chrono::duration<double> loadVocabularyTime;
-	std::chrono::duration<double> buildTrieTime;
-	std::chrono::duration<double> loadCorpusTime;
-	std::chrono::duration<double> normalizeCorpusTime;
-	std::chrono::duration<double> tokenizeCorpusTime;
-	std::chrono::duration<double> createPairsTime;
-	std::chrono::duration<double> calculateFrequenciesTime;
-	std::chrono::duration<double> orderFrequenciesTime;
-	std::chrono::duration<double> clearTime;
 
+		trieNode* root = new trieNode();
 
 
 
 
 
-	start = std::chrono::high_resolution_clock::now();
+		buildTrie(vocabulary, root);
 
-	std::vector<std::string> vocabulary = loadVocabulary();
 
-	loadVocabularyTime += std::chrono::high_resolution_clock::now() - start;
 
 
-	trieNode* root = new trieNode();
 
 
 
+		std::ifstream corpusStream("C:\\Users\\SWAGG\\Downloads\\simplewiki-20250701-pages-articles-multistream.xml\\simplewiki-20250701-pages-articles-multistream.xml");
+		//std::ifstream corpusStream("corpus.txt");
 
-	start = std::chrono::high_resolution_clock::now();
 
-	buildTrie(vocabulary, root);
 
-	buildTrieTime += std::chrono::high_resolution_clock::now() - start;
 
+		std::unordered_map<std::pair<int, int>, int, pair_hash> frequencies;
 
 
+		std::string corpusString;
 
 
 
-	std::ifstream corpusStream("C:\\Users\\SWAGG\\Downloads\\simplewiki-20250701-pages-articles-multistream.xml\\simplewiki-20250701-pages-articles-multistream.xml");
+		while (loadCorpus(corpusStream, corpusString)) {
 
 
 
 
+			std::vector<std::string> words = normalizeCorpus(corpusString);
 
 
-	std::unordered_map<std::pair<int, int>, int, pair_hash> frequencies;
 
 
-	std::string corpusString;
 
 
-	start = std::chrono::high_resolution_clock::now();
 
 
 
-	while (loadCorpus(corpusStream, corpusString)) {
 
 
-		loadCorpusTime += std::chrono::high_resolution_clock::now() - start;
+			std::vector<std::vector<int>> tokenizedWords = tokenizeCorpus(words, root);
 
 
 
 
 
-		start = std::chrono::high_resolution_clock::now();
+			std::vector<std::pair<int, int>> pairs = createPairs(tokenizedWords, words);
 
-		std::vector<std::string> words = normalizeCorpus(corpusString);
 
-		normalizeCorpusTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
 
 
+			calculateFrequencies(pairs, frequencies);
 
 
 
 
-		start = std::chrono::high_resolution_clock::now();
 
-		std::vector<std::vector<int>> tokenizedWords = tokenizeCorpus(words, root);
 
-		tokenizeCorpusTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
+			words.resize(0);
 
-		start = std::chrono::high_resolution_clock::now();
+			tokenizedWords.resize(0);
 
-		std::vector<std::pair<int, int>> pairs = createPairs(tokenizedWords);
+			pairs.resize(0);
 
-		createPairsTime += std::chrono::high_resolution_clock::now() - start;
 
 
 
+		}
 
 
-		start = std::chrono::high_resolution_clock::now();
 
-		calculateFrequencies(pairs, frequencies);
 
-		calculateFrequenciesTime += std::chrono::high_resolution_clock::now() - start;
 
 
+		std::vector<std::pair<std::pair<int, int>, int>> orderedFrequencies = orderFrequencies(frequencies);
 
 
 
 
 
-		start = std::chrono::high_resolution_clock::now();
 
-		words.resize(0);
 
-		tokenizedWords.resize(0);
 
-		pairs.resize(0);
+		auto runEnd = std::chrono::high_resolution_clock::now();
 
-		clearTime += std::chrono::high_resolution_clock::now() - start;
 
+		std::chrono::duration<double> runtime = runEnd - runStart;
 
-		start = std::chrono::high_resolution_clock::now();
 
+
+		outputPair(vocabulary, orderedFrequencies);
+
+
+
+		deleteTrie(root);
+
+
+
+		vocabulary.resize(0);
+		frequencies.clear();
+		orderedFrequencies.resize(0);
+
+		std::cout << "runtime : " << runtime << "\n";
 	}
-
-
-
-
-
-
-	start = std::chrono::high_resolution_clock::now();
-
-	std::vector<std::pair<std::pair<int, int>, int>> orderedFrequencies = orderFrequencies(frequencies);
-
-	orderFrequenciesTime += std::chrono::high_resolution_clock::now() - start;
-
-
-
-
-
-
-
-	auto runEnd = std::chrono::high_resolution_clock::now();
-
-
-	std::chrono::duration<double> runtime = runEnd - runStart;
-
-
-
-
-
-
-	std::cout << "loadVocabularyTime : " << loadVocabularyTime.count() << "\n";
-	std::cout << "buildTrieTime : " << buildTrieTime.count() << "\n";
-	std::cout << "loadCorpusTime : " << loadCorpusTime.count() << "\n";
-	std::cout << "normalizeCorpusTime : " << normalizeCorpusTime.count() << "\n";
-	std::cout << "tokenizeCorpusTime : " << tokenizeCorpusTime.count() << "\n";
-	std::cout << "createPairsTime : " << createPairsTime.count() << "\n";
-	std::cout << "calculateFrequenciesTime : " << calculateFrequenciesTime.count() << "\n";
-	std::cout << "clearTime : " << clearTime.count() << "\n";
-	std::cout << "orderFrequenciesTime : " << orderFrequenciesTime.count() << "\n";
-
-
-
-
-
-
-
-
-	std::cout << "runtime : " << runtime << "\n";
-
-
-	outputPair(vocabulary, orderedFrequencies);
-
 }
